@@ -218,6 +218,16 @@
           <button class="secondary" id="createEventBtn">Create Test Event</button>
         </div>
       </div>
+
+      <div class="card">
+        <h2>4. GraphQL</h2>
+        <p>Open the GraphQL playground and use sample queries for testing.</p>
+        <div class="actions">
+          <a class="button primary" href="/graphql" target="_blank" rel="noopener noreferrer">Open GraphQL UI</a>
+          <button class="secondary" id="copyQueryBtn">Copy Sample Query</button>
+          <button class="secondary" id="copyMutationBtn">Copy Sample Mutation</button>
+        </div>
+      </div>
     </section>
 
     <section class="card">
@@ -225,6 +235,39 @@
       <p>Upcoming events returned by your API.</p>
       <div id="events" class="event-list"></div>
       <div class="footer-note">If no events appear, authenticate first or check your API response below.</div>
+    </section>
+
+    <section class="card" style="margin-top: 24px;">
+      <h2>GraphQL Samples</h2>
+      <p>Paste these into the GraphQL UI at <code>/graphql</code>.</p>
+      <pre id="graphqlSamples" class="json-box">Query:
+query {
+  health
+  authStatus {
+    authenticated
+    message
+  }
+  upcomingEvents(limit: 5) {
+    id
+    summary
+    start
+    htmlLink
+  }
+}
+
+Mutation:
+mutation {
+  createTestEvent {
+    ok
+    message
+    event {
+      id
+      summary
+      start
+      htmlLink
+    }
+  }
+}</pre>
     </section>
 
     <section class="card" style="margin-top: 24px;">
@@ -240,6 +283,35 @@
     const rawOutputEl = document.getElementById('rawOutput');
     const loadEventsBtn = document.getElementById('loadEventsBtn');
     const createEventBtn = document.getElementById('createEventBtn');
+    const copyQueryBtn = document.getElementById('copyQueryBtn');
+    const copyMutationBtn = document.getElementById('copyMutationBtn');
+
+    const sampleQuery = `query {
+  health
+  authStatus {
+    authenticated
+    message
+  }
+  upcomingEvents(limit: 5) {
+    id
+    summary
+    start
+    htmlLink
+  }
+}`;
+
+    const sampleMutation = `mutation {
+  createTestEvent {
+    ok
+    message
+    event {
+      id
+      summary
+      start
+      htmlLink
+    }
+  }
+}`;
 
     function setStatus(message, type = '') {
       statusEl.textContent = message;
@@ -335,6 +407,18 @@
 
     loadEventsBtn.addEventListener('click', loadEvents);
     createEventBtn.addEventListener('click', createEvent);
+
+    async function copyToClipboard(text, label) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus(`${label} copied to clipboard.`, 'success');
+      } catch (err) {
+        setStatus(`Could not copy ${label.toLowerCase()}.`, 'error');
+      }
+    }
+
+    copyQueryBtn.addEventListener('click', () => copyToClipboard(sampleQuery, 'Sample query'));
+    copyMutationBtn.addEventListener('click', () => copyToClipboard(sampleMutation, 'Sample mutation'));
   </script>
 </body>
 </html>
