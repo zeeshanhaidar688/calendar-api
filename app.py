@@ -15,15 +15,15 @@ app = Flask(__name__)
 app.secret_key = "replace-this-with-a-random-secret-key"
 
 
+
+
+
+
+from flask import render_template
+
 @app.route("/", methods=["GET"])
 def home():
-    return """
-    <h2>Google Calendar API Project</h2>
-    <p><a href="/auth/start">Connect Google Calendar</a></p>
-    <p><a href="/calendar_test_list">List Events</a></p>
-    <p>Use POST /calendar_test_create to create a test event.</p>
-    """
-
+    return render_template("index.html")
 
 @app.route("/auth/start", methods=["GET"])
 def auth_start():

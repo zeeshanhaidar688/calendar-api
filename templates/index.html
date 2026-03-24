@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar API UI</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --success: #059669;
+      --danger: #dc2626;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .title {
+      margin: 0 0 10px;
+      font-size: 32px;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .card p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button, a.button {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .primary:hover { background: var(--accent-hover); }
+
+    .secondary {
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .secondary:hover { background: #e0e7ff; }
+
+    .status {
+      margin-bottom: 24px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: var(--success);
+    }
+
+    .status.error {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: var(--danger);
+    }
+
+    .event-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .event-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .event-item h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+    }
+
+    .event-meta {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .json-box {
+      margin-top: 18px;
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 160px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1 class="title">Google Calendar API UI</h1>
+      <p class="subtitle">
+        A simple frontend for testing your Flask calendar endpoints. Connect your Google account,
+        list upcoming events, and create a test event from one screen.
+      </p>
+    </section>
+
+    <div id="status" class="status">Ready. Choose an action below.</div>
+
+    <section class="grid">
+      <div class="card">
+        <h2>1. Connect Account</h2>
+        <p>Start the OAuth flow and authorize access to your Google Calendar.</p>
+        <div class="actions">
+          <a class="button primary" href="/auth/start">Connect Google Calendar</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2. View Events</h2>
+        <p>Fetch upcoming events from <code>/calendar_test_list</code>.</p>
+        <div class="actions">
+          <button class="primary" id="loadEventsBtn">Load Upcoming Events</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>3. Create Test Event</h2>
+        <p>Create a simple event using <code>POST /calendar_test_create</code>.</p>
+        <div class="actions">
+          <button class="secondary" id="createEventBtn">Create Test Event</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Events</h2>
+      <p>Upcoming events returned by your API.</p>
+      <div id="events" class="event-list"></div>
+      <div class="footer-note">If no events appear, authenticate first or check your API response below.</div>
+    </section>
+
+    <section class="card" style="margin-top: 24px;">
+      <h2>Raw API Response</h2>
+      <p>Useful for debugging and demos.</p>
+      <pre id="rawOutput" class="json-box">No API call made yet.</pre>
+    </section>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const eventsEl = document.getElementById('events');
+    const rawOutputEl = document.getElementById('rawOutput');
+    const loadEventsBtn = document.getElementById('loadEventsBtn');
+    const createEventBtn = document.getElementById('createEventBtn');
+
+    function setStatus(message, type = '') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`.trim();
+    }
+
+    function setRawOutput(data) {
+      if (typeof data === 'string') {
+        rawOutputEl.textContent = data;
+        return;
+      }
+      rawOutputEl.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function renderEvents(events = []) {
+      eventsEl.innerHTML = '';
+
+      if (!events.length) {
+        eventsEl.innerHTML = '<div class="event-item"><h3>No upcoming events found</h3><div class="event-meta">Try authenticating first, then reload events.</div></div>';
+        return;
+      }
+
+      for (const event of events) {
+        const item = document.createElement('div');
+        item.className = 'event-item';
+
+        const title = document.createElement('h3');
+        title.textContent = event.summary || '(No title)';
+
+        const meta = document.createElement('div');
+        meta.className = 'event-meta';
+        meta.textContent = `Start: ${event.start || 'N/A'}`;
+
+        item.appendChild(title);
+        item.appendChild(meta);
+
+        if (event.htmlLink) {
+          const link = document.createElement('a');
+          link.href = event.htmlLink;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = 'Open in Google Calendar';
+          item.appendChild(link);
+        }
+
+        eventsEl.appendChild(item);
+      }
+    }
+
+    async function loadEvents() {
+      setStatus('Loading events...', '');
+      try {
+        const res = await fetch('/calendar_test_list');
+        const data = await res.json();
+        setRawOutput(data);
+
+        if (!res.ok || data.ok === false) {
+          renderEvents([]);
+          setStatus(data.error || 'Failed to load events.', 'error');
+          return;
+        }
+
+        renderEvents(data.events || []);
+        setStatus(`Loaded ${data.count ?? 0} event(s) successfully.`, 'success');
+      } catch (err) {
+        renderEvents([]);
+        setRawOutput(String(err));
+        setStatus('Network error while loading events.', 'error');
+      }
+    }
+
+    async function createEvent() {
+      setStatus('Creating test event...', '');
+      try {
+        const res = await fetch('/calendar_test_create', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        setRawOutput(data);
+
+        if (!res.ok || data.ok === false) {
+          setStatus(data.error || 'Failed to create event.', 'error');
+          return;
+        }
+
+        setStatus('Test event created successfully.', 'success');
+        await loadEvents();
+      } catch (err) {
+        setRawOutput(String(err));
+        setStatus('Network error while creating event.', 'error');
+      }
+    }
+
+    loadEventsBtn.addEventListener('click', loadEvents);
+    createEventBtn.addEventListener('click', createEvent);
+  </script>
+</body>
+</html>
