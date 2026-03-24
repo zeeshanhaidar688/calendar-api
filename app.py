@@ -1,8 +1,15 @@
+import os
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # local testing only
+
 from datetime import datetime, timedelta, timezone
+from flask import Flask, jsonify, redirect, request, session
 
-from flask import Flask, jsonify, redirect, request, session, url_for
-
-from calendar_service import create_oauth_flow, get_calendar_service, save_credentials
+from calendar_service import (
+    create_oauth_flow,
+    generate_code_verifier,
+    get_calendar_service,
+    save_credentials,
+)
 
 app = Flask(__name__)
 app.secret_key = "replace-this-with-a-random-secret-key"
@@ -11,7 +18,7 @@ app.secret_key = "replace-this-with-a-random-secret-key"
 @app.route("/", methods=["GET"])
 def home():
     return """
-    <h2>Google Calendar API</h2>
+    <h2>Google Calendar API Project</h2>
     <p><a href="/auth/start">Connect Google Calendar</a></p>
     <p><a href="/calendar_test_list">List Events</a></p>
     <p>Use POST /calendar_test_create to create a test event.</p>
@@ -20,31 +27,39 @@ def home():
 
 @app.route("/auth/start", methods=["GET"])
 def auth_start():
-    flow = create_oauth_flow()
+    code_verifier = generate_code_verifier()
+    flow = create_oauth_flow(code_verifier=code_verifier)
 
     authorization_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
-        prompt="consent"
+        prompt="consent",
     )
 
     session["oauth_state"] = state
+    session["code_verifier"] = code_verifier
+
     return redirect(authorization_url)
 
 
 @app.route("/auth/callback", methods=["GET"])
 def auth_callback():
     state = session.get("oauth_state")
+    code_verifier = session.get("code_verifier")
+
     if not state:
         return "Missing OAuth state in session.", 400
+    if not code_verifier:
+        return "Missing PKCE code verifier in session.", 400
 
-    flow = create_oauth_flow()
-    flow.state = state
-
+    flow = create_oauth_flow(state=state, code_verifier=code_verifier)
     flow.fetch_token(authorization_response=request.url)
 
     creds = flow.credentials
     save_credentials(creds)
+
+    session.pop("oauth_state", None)
+    session.pop("code_verifier", None)
 
     return """
     <h3>Authentication successful</h3>
@@ -130,7 +145,7 @@ def calendar_test_create():
             "start": created_event.get("start")
         }
     })
-
+    
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

@@ -1,30 +1,34 @@
 import json
 import os
+import secrets
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
-USE_MOCK = True
-
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CREDENTIALS_FILE = os.path.join(BASE_DIR, "credentials.json")
 TOKEN_FILE = os.path.join(BASE_DIR, "token.json")
+REDIRECT_URI = "http://127.0.0.1:5000/auth/callback"
 
 
-def create_oauth_flow():
-    if not os.path.exists(CREDENTIALS_FILE):
-        raise FileNotFoundError(f"credentials.json not found at: {CREDENTIALS_FILE}")
-
+def create_oauth_flow(state=None, code_verifier=None):
     flow = Flow.from_client_secrets_file(
         CREDENTIALS_FILE,
         scopes=SCOPES,
-        redirect_uri="http://127.0.0.1:5000/auth/callback"
+        state=state,
+        redirect_uri=REDIRECT_URI,
+        code_verifier=code_verifier,
     )
     return flow
+
+
+def generate_code_verifier():
+    # PKCE verifier must be 43-128 chars
+    return secrets.token_urlsafe(64)[:100]
 
 
 def save_credentials(creds: Credentials):
