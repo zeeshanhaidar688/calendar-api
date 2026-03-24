@@ -1,8 +1,12 @@
 import os
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # local testing only
+
+# Local development only. Do not use this in production.
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 from datetime import datetime, timedelta, timezone
-from flask import Flask, jsonify, redirect, request, session
+
+from flask import Flask, jsonify, redirect, render_template, request, session
+from strawberry.flask.views import GraphQLView
 
 from calendar_service import (
     create_oauth_flow,
@@ -10,20 +14,26 @@ from calendar_service import (
     get_calendar_service,
     save_credentials,
 )
+from graphql_schema import schema
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 app.secret_key = "replace-this-with-a-random-secret-key"
 
 
+# GraphQL endpoint
+app.add_url_rule(
+    "/graphql",
+    view_func=GraphQLView.as_view(
+        "graphql_view",
+        schema=schema,
+    ),
+)
 
-
-
-
-from flask import render_template
 
 @app.route("/", methods=["GET"])
 def home():
     return render_template("index.html")
+
 
 @app.route("/auth/start", methods=["GET"])
 def auth_start():
@@ -49,6 +59,7 @@ def auth_callback():
 
     if not state:
         return "Missing OAuth state in session.", 400
+
     if not code_verifier:
         return "Missing PKCE code verifier in session.", 400
 
@@ -64,7 +75,9 @@ def auth_callback():
     return """
     <h3>Authentication successful</h3>
     <p>Your Google Calendar is now connected.</p>
-    <p><a href="/calendar_test_list">Test list events</a></p>
+    <p><a href="/">Go back to UI</a></p>
+    <p><a href="/calendar_test_list">Test REST list endpoint</a></p>
+    <p><a href="/graphql">Open GraphQL</a></p>
     """
 
 
@@ -145,7 +158,8 @@ def calendar_test_create():
             "start": created_event.get("start")
         }
     })
-    
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+    
